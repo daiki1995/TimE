@@ -146,37 +146,35 @@ function showInstructions() {
 【目的】
 時間操作能力を駆使して異形の宇宙生命体から生き延び、宇宙船の深部を目指す
 
-【操作方法】
+【基本操作】
 • マウスクリック/タップ: すべての操作
 • カード選択: 手札のカードをクリック
 • 射撃: 敵をクリック
 • 電力チャージ: 右下の⚡ボタンを長押し
+
+【時間操作】
 • 時間停止/再開: SPACEキー または 時間停止ボタンをタップ
-• オート射撃切り替え: Aキー または オート射撃表示をタップ (時間停止中のみ)
+• 敵の攻撃タイマーと動きを完全停止
+• サポート効果のタイマーも一時停止
+• 戦略を練り直す時間を作ることができる
+
+【オート射撃システム】
+• デフォルト: オート射撃モードON
+• 切り替え: 時間停止中にオート射撃表示をタップ または Aキー
+• 動作: ボス優先、体力の少ない敵を狙う戦略
+• 条件: 攻撃カードが装填されている必要がある
+• 表示: 画面左上にモード状態を表示
 
 【カードの種類】
 • 攻撃カード: 敵にダメージ
 • 時間操作カード: 敵の動きを妨害
 • サポートカード: 回復や強化効果
 
-【時間停止機能】
-• 敵の攻撃タイマーと動きを完全停止
-• サポート効果のタイマーも一時停止
-• 時間停止中は攻撃・電力チャージ・一部サポートカードが使用不可
-• 戦略を練り直す時間を作ることができる
-
-【オート射撃モード】
-• 時間停止中にAキーまたはタップで切り替え可能
-• 時間再開時に自動で敵を攻撃
-• ボス優先、体力の少ない敵を狙う戦略
-• 攻撃カードが装填されている必要がある
-
 【戦略のコツ】
 • 電力を管理して持続的に戦闘する
 • 時間操作で敵の攻撃を回避
-• 状況に応じてカードを使い分ける
-• 危険な状況では時間停止を活用する
-• オート射撃で効率的に戦闘する`);
+• オート射撃で効率的に戦闘
+• 時間停止中にモード切り替えで戦略調整`);
 }
 
 // カード表示
@@ -258,6 +256,7 @@ function startGame() {
     renderHand();
     updateUI();
     showMessage("ステージ1開始！ 異形の宇宙生命体が襲来している！");
+    addLog("ゲーム開始 - ウェーブ1開始");
     startEnergyRegeneration();
     
     // デフォルトでオート射撃モードONなので開始
@@ -427,7 +426,9 @@ function shootEnemy(enemy) {
         showMessage(`${card.name}が失敗しました！`);
     }
     
-    // 攻撃カードは装填したまま（選択解除しない）
+    // 攻撃後にカードの選択を解除
+    gameState.selectedCard = null;
+    renderHand();
     updateUI();
 }
 
@@ -438,6 +439,7 @@ function executeSupportCardEffect(card) {
             const healAmount = card.healing;
             gameState.player.hp = Math.min(gameState.player.maxHp, gameState.player.hp + healAmount);
             showMessage(`${card.name}でHP${healAmount}回復！`);
+            addLog(`${card.name}を使用してHP${healAmount}回復`);
             break;
             
         case 'overload':
@@ -447,14 +449,17 @@ function executeSupportCardEffect(card) {
                 gameState.overloadActive = false;
                 removeSupportEffect('overload');
                 showMessage("オーバーロード効果が切れました");
+                addLog("オーバーロード効果終了");
             }, card.duration);
             showMessage(`${card.name}発動！電力消費なし！`);
+            addLog(`${card.name}発動！${card.duration/1000}秒間電力消費なし`);
             break;
             
         case 'shield':
             gameState.player.shield = (gameState.player.shield || 0) + card.shield;
             addSupportEffect('shield', `シールド (${gameState.player.shield}回)`, null);
             showMessage(`${card.name}でシールド展開！`);
+            addLog(`${card.name}でシールド展開（${card.shield}回分）`);
             break;
             
         case 'accelerate':
@@ -464,14 +469,17 @@ function executeSupportCardEffect(card) {
                 gameState.accelerateActive = false;
                 removeSupportEffect('accelerate');
                 showMessage("時間加速効果が切れました");
+                addLog("時間加速効果終了");
             }, card.duration);
             showMessage(`${card.name}発動！電力回復速度アップ！`);
+            addLog(`${card.name}発動！${card.duration/1000}秒間電力回復速度2倍`);
             break;
             
         case 'energyRecover':
             const recoverAmount = card.energyRecover;
             gameState.player.energy = Math.min(gameState.player.maxEnergy, gameState.player.energy + recoverAmount);
             showMessage(`${card.name}で電力${recoverAmount}回復！`);
+            addLog(`${card.name}で電力${recoverAmount}回復`);
             break;
     }
 }
@@ -484,17 +492,21 @@ function executeCardEffect(card, enemy) {
             enemy.hp = Math.max(0, enemy.hp - damage);
             showDamage(enemy, damage);
             showMessage(`${card.name}で${damage}ダメージ！`);
+            addLog(`${card.name}で敵に${damage}ダメージ`);
             break;
             
         case 'multiattack':
+            let totalDamage = 0;
             for (let i = 0; i < card.shots; i++) {
                 if (Math.random() * 100 < card.successRate) {
                     const damage = card.damage[0];
                     enemy.hp = Math.max(0, enemy.hp - damage);
+                    totalDamage += damage;
                     setTimeout(() => showDamage(enemy, damage), i * 200);
                 }
             }
             showMessage(`${card.name}で連続攻撃！`);
+            addLog(`${card.name}で敵に合計${totalDamage}ダメージ`);
             break;
             
         case 'freeze':
@@ -517,6 +529,7 @@ function executeCardEffect(card, enemy) {
             }, card.duration);
             
             showMessage(`${card.name}で敵を凍結！`);
+            addLog(`${card.name}で敵を${card.duration/1000}秒間凍結`);
             break;
     }
     
@@ -545,6 +558,9 @@ function showDamage(enemy, damage) {
 
 // 敵を倒す
 function killEnemy(enemy) {
+    const enemyType = enemy.isBoss ? 'ボス' : '敵';
+    addLog(`${enemyType}を撃破！`);
+    
     gameState.enemies = gameState.enemies.filter(e => e.id !== enemy.id);
     const enemyElement = document.getElementById(`enemy-${enemy.id}`);
     if (enemyElement) {
@@ -561,6 +577,7 @@ function killEnemy(enemy) {
     
     // 全滅チェック
     if (gameState.enemies.length === 0) {
+        addLog('全ての敵を撃破！ウェーブクリア');
         setTimeout(() => {
             showCardSwap();
         }, 1000);
@@ -589,6 +606,7 @@ function nextWave() {
         updateGameAreaBackground();
         generateEnemies();
         showMessage(`ウェーブ ${gameState.wave} 開始！`);
+        addLog(`ウェーブ ${gameState.wave} 開始`);
     }
     
     updateUI();
@@ -753,16 +771,20 @@ function attackPlayer(enemy) {
             removeSupportEffect('shield');
         }
         showMessage("シールドが攻撃を防いだ！");
+        addLog("シールドが敵の攻撃を防御");
     } else {
         const damage = enemy.isBoss ? 20 : 15;
+        const enemyType = enemy.isBoss ? 'ボス' : '敵';
         gameState.player.hp = Math.max(0, gameState.player.hp - damage);
         showPlayerDamageEffect(damage);
         showMessage(`敵の攻撃！${damage}ダメージを受けた`);
+        addLog(`${enemyType}の攻撃で${damage}ダメージを受けた`);
     }
     
     updateUI();
     
     if (gameState.player.hp <= 0) {
+        addLog("プレイヤー死亡 - ゲームオーバー");
         gameOver();
     }
 }
@@ -1439,6 +1461,50 @@ function performAutoAttack() {
             showMessage(`${card.name}が失敗しました！`);
         }
         
+        // オート攻撃後にカード選択を解除
+        gameState.selectedCard = null;
+        renderHand();
         updateUI();
+    }
+}
+
+// ログボックス制御
+function toggleLogBox() {
+    const logBox = document.getElementById('logBox');
+    const toggleText = document.getElementById('logToggleText');
+    
+    if (logBox.classList.contains('hidden')) {
+        logBox.classList.remove('hidden');
+        toggleText.textContent = '❌';
+    } else {
+        logBox.classList.add('hidden');
+        toggleText.textContent = '📋';
+    }
+}
+
+// ログクリア
+function clearLog() {
+    const logContent = document.getElementById('logContent');
+    if (logContent) {
+        logContent.innerHTML = '';
+    }
+}
+
+// ログに追加
+function addLog(text) {
+    const logContent = document.getElementById('logContent');
+    if (logContent) {
+        const logEntry = document.createElement('div');
+        logEntry.className = 'log-entry';
+        logEntry.textContent = `${new Date().toLocaleTimeString()}: ${text}`;
+        logContent.appendChild(logEntry);
+        
+        // 自動スクロール
+        logContent.scrollTop = logContent.scrollHeight;
+        
+        // ログが多すぎる場合は古いものを削除
+        while (logContent.children.length > 50) {
+            logContent.removeChild(logContent.firstChild);
+        }
     }
 }

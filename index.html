@@ -66,6 +66,20 @@
             </div>
 
             <div class="message-area" id="messageArea"></div>
+            
+            <!-- 左端のログボックス -->
+            <div class="log-container" id="logContainer">
+                <div class="log-toggle" onclick="toggleLogBox()">
+                    <span id="logToggleText">📋</span>
+                </div>
+                <div class="log-box hidden" id="logBox">
+                    <div class="log-header">
+                        <span>戦闘ログ</span>
+                        <button onclick="clearLog()" style="float: right; font-size: 12px;">クリア</button>
+                    </div>
+                    <div class="log-content" id="logContent"></div>
+                </div>
+            </div>
         </div>
 
         <div id="routeChoice" class="route-choice hidden">
