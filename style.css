@@ -568,4 +568,79 @@ body {
     to { box-shadow: 0 0 15px rgba(138, 43, 226, 0.6); }
 }
 
+/* 攻撃エフェクトアニメーション */
+@keyframes attackLineFlash {
+    0% { 
+        opacity: 0;
+        transform: rotate(var(--rotation)) scale(0);
+    }
+    50% { 
+        opacity: 1;
+        transform: rotate(var(--rotation)) scale(1);
+        box-shadow: 0 0 10px #4af2ff;
+    }
+    100% { 
+        opacity: 0;
+        transform: rotate(var(--rotation)) scale(1);
+    }
+}
+
+@keyframes impactExpand {
+    0% { 
+        transform: scale(0);
+        opacity: 1;
+    }
+    50% { 
+        transform: scale(1.5);
+        opacity: 0.8;
+    }
+    100% { 
+        transform: scale(3);
+        opacity: 0;
+    }
+}
+
+@keyframes enemyAttackCharge {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); filter: brightness(1.5); }
+    100% { transform: scale(1); }
+}
+
+@keyframes enemyBeamFlash {
+    0% { 
+        opacity: 0;
+        transform: rotate(var(--rotation)) scale(0);
+    }
+    30% { 
+        opacity: 1;
+        transform: rotate(var(--rotation)) scale(1);
+        box-shadow: 0 0 8px #ff4444;
+    }
+    100% { 
+        opacity: 0;
+        transform: rotate(var(--rotation)) scale(1);
+    }
+}
+
+@keyframes screenFlash {
+    0% { opacity: 0; }
+    50% { opacity: 0.6; }
+    100% { opacity: 0; }
+}
+
+@keyframes playerDamageFloat {
+    0% { 
+        opacity: 1; 
+        transform: translateY(0) scale(1); 
+    }
+    50% { 
+        opacity: 1; 
+        transform: translateY(-30px) scale(1.2); 
+    }
+    100% { 
+        opacity: 0; 
+        transform: translateY(-60px) scale(0.8); 
+    }
+}
+
 .hidden { display: none !important; }

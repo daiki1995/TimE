@@ -106,6 +106,16 @@ const allCards = [
         shield: 3,
         successRate: 100,
         action: "shield"
+    },
+    {
+        id: 9,
+        name: "高速充電",
+        type: "サポート",
+        cost: 10,
+        effect: "電力を20回復",
+        energyRecover: 20,
+        successRate: 100,
+        action: "energyRecover"
     }
 ];
 
@@ -323,7 +333,7 @@ function selectHandCard(card) {
     
     if (gameState.player.energy >= card.cost || gameState.overloadActive) {
         // サポート系カードは即座に実行
-        if (card.action === 'heal' || card.action === 'overload' || card.action === 'accelerate' || card.action === 'shield') {
+        if (card.action === 'heal' || card.action === 'overload' || card.action === 'accelerate' || card.action === 'shield' || card.action === 'energyRecover') {
             // 電力消費
             if (!gameState.overloadActive) {
                 if (gameState.player.energy < card.cost) {
@@ -383,6 +393,7 @@ function shootEnemy(enemy) {
     
     if (success) {
         executeCardEffect(card, enemy);
+        showPlayerAttackEffect(enemy);
     } else {
         showMessage(`${card.name}が失敗しました！`);
     }
@@ -426,6 +437,12 @@ function executeSupportCardEffect(card) {
                 showMessage("時間加速効果が切れました");
             }, card.duration);
             showMessage(`${card.name}発動！電力回復速度アップ！`);
+            break;
+            
+        case 'energyRecover':
+            const recoverAmount = card.energyRecover;
+            gameState.player.energy = Math.min(gameState.player.maxEnergy, gameState.player.energy + recoverAmount);
+            showMessage(`${card.name}で電力${recoverAmount}回復！`);
             break;
     }
 }
@@ -525,6 +542,10 @@ function killEnemy(enemy) {
 function nextWave() {
     gameState.wave++;
     
+    // ウェーブクリア時に電力を10回復
+    gameState.player.energy = Math.min(gameState.player.maxEnergy, gameState.player.energy + 10);
+    showMessage(`ウェーブクリア！電力10回復`);
+    
     if (gameState.wave % 3 === 1 && gameState.wave > 1) {
         // ルート選択
         showRouteChoice();
@@ -532,6 +553,8 @@ function nextWave() {
         generateEnemies();
         showMessage(`ウェーブ ${gameState.wave} 開始！`);
     }
+    
+    updateUI();
 }
 
 // ルート選択表示
@@ -662,6 +685,8 @@ function toggleTimePause() {
 
 // プレイヤーへの攻撃
 function attackPlayer(enemy) {
+    showEnemyAttackEffect(enemy);
+    
     if (gameState.player.shield && gameState.player.shield > 0) {
         gameState.player.shield--;
         updateSupportEffect('shield', `シールド (${gameState.player.shield}回)`);
@@ -672,6 +697,7 @@ function attackPlayer(enemy) {
     } else {
         const damage = enemy.isBoss ? 20 : 15;
         gameState.player.hp = Math.max(0, gameState.player.hp - damage);
+        showPlayerDamageEffect(damage);
         showMessage(`敵の攻撃！${damage}ダメージを受けた`);
     }
     
@@ -1009,4 +1035,125 @@ function closeCardSwap() {
     selectedCardIndex = -1;
     document.getElementById('cardSwap').classList.add('hidden');
     renderHand(); // 手札を再描画
+}
+
+// プレイヤー攻撃エフェクト
+function showPlayerAttackEffect(enemy) {
+    const gameArea = document.getElementById('gameArea');
+    
+    // 攻撃ライン
+    const attackLine = document.createElement('div');
+    attackLine.className = 'attack-line';
+    attackLine.style.position = 'absolute';
+    attackLine.style.left = '100px';
+    attackLine.style.top = '300px';
+    attackLine.style.width = Math.sqrt(Math.pow(enemy.x - 100, 2) + Math.pow(enemy.y - 300, 2)) + 'px';
+    attackLine.style.height = '3px';
+    attackLine.style.background = 'linear-gradient(90deg, #4af2ff, #ff4af2)';
+    attackLine.style.transformOrigin = 'left center';
+    attackLine.style.transform = `rotate(${Math.atan2(enemy.y - 300, enemy.x - 100) * 180 / Math.PI}deg)`;
+    attackLine.style.animation = 'attackLineFlash 0.3s ease-out';
+    attackLine.style.zIndex = '5';
+    
+    gameArea.appendChild(attackLine);
+    
+    // 敵への着弾エフェクト
+    const impactEffect = document.createElement('div');
+    impactEffect.className = 'impact-effect';
+    impactEffect.style.position = 'absolute';
+    impactEffect.style.left = (enemy.x + 40) + 'px';
+    impactEffect.style.top = (enemy.y + 40) + 'px';
+    impactEffect.style.width = '30px';
+    impactEffect.style.height = '30px';
+    impactEffect.style.borderRadius = '50%';
+    impactEffect.style.background = 'radial-gradient(circle, #fff, #4af2ff)';
+    impactEffect.style.animation = 'impactExpand 0.4s ease-out';
+    impactEffect.style.zIndex = '6';
+    
+    gameArea.appendChild(impactEffect);
+    
+    // エフェクトを削除
+    setTimeout(() => {
+        if (attackLine.parentNode) attackLine.remove();
+        if (impactEffect.parentNode) impactEffect.remove();
+    }, 400);
+}
+
+// 敵攻撃エフェクト
+function showEnemyAttackEffect(enemy) {
+    const gameArea = document.getElementById('gameArea');
+    
+    // 敵の攻撃予兆
+    const enemyElement = document.getElementById(`enemy-${enemy.id}`);
+    if (enemyElement) {
+        enemyElement.style.animation = 'enemyAttackCharge 0.3s ease-in-out';
+        setTimeout(() => {
+            enemyElement.style.animation = 'float 3s ease-in-out infinite';
+        }, 300);
+    }
+    
+    // 攻撃ビーム
+    setTimeout(() => {
+        const attackBeam = document.createElement('div');
+        attackBeam.className = 'enemy-attack-beam';
+        attackBeam.style.position = 'absolute';
+        attackBeam.style.left = enemy.x + 'px';
+        attackBeam.style.top = enemy.y + 'px';
+        attackBeam.style.width = Math.sqrt(Math.pow(100 - enemy.x, 2) + Math.pow(300 - enemy.y, 2)) + 'px';
+        attackBeam.style.height = '4px';
+        attackBeam.style.background = 'linear-gradient(90deg, #ff4444, #ff8888)';
+        attackBeam.style.transformOrigin = 'left center';
+        attackBeam.style.transform = `rotate(${Math.atan2(300 - enemy.y, 100 - enemy.x) * 180 / Math.PI}deg)`;
+        attackBeam.style.animation = 'enemyBeamFlash 0.4s ease-out';
+        attackBeam.style.zIndex = '5';
+        
+        gameArea.appendChild(attackBeam);
+        
+        setTimeout(() => {
+            if (attackBeam.parentNode) attackBeam.remove();
+        }, 400);
+    }, 200);
+}
+
+// プレイヤーダメージエフェクト
+function showPlayerDamageEffect(damage) {
+    const gameArea = document.getElementById('gameArea');
+    
+    // 画面フラッシュ
+    const flashEffect = document.createElement('div');
+    flashEffect.className = 'screen-flash';
+    flashEffect.style.position = 'fixed';
+    flashEffect.style.top = '0';
+    flashEffect.style.left = '0';
+    flashEffect.style.width = '100vw';
+    flashEffect.style.height = '100vh';
+    flashEffect.style.background = 'rgba(255, 68, 68, 0.3)';
+    flashEffect.style.pointerEvents = 'none';
+    flashEffect.style.animation = 'screenFlash 0.3s ease-out';
+    flashEffect.style.zIndex = '20';
+    
+    document.body.appendChild(flashEffect);
+    
+    // ダメージテキスト
+    const damageText = document.createElement('div');
+    damageText.className = 'player-damage-text';
+    damageText.textContent = `-${damage}`;
+    damageText.style.position = 'absolute';
+    damageText.style.left = '150px';
+    damageText.style.top = '250px';
+    damageText.style.fontSize = '2em';
+    damageText.style.fontWeight = 'bold';
+    damageText.style.color = '#ff4444';
+    damageText.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.8)';
+    damageText.style.pointerEvents = 'none';
+    damageText.style.animation = 'playerDamageFloat 1.5s ease-out forwards';
+    damageText.style.zIndex = '10';
+    
+    gameArea.appendChild(damageText);
+    
+    // エフェクトを削除
+    setTimeout(() => {
+        if (flashEffect.parentNode) flashEffect.remove();
+        if (damageText.parentNode) damageText.remove();
+    }, 1500);
 }
