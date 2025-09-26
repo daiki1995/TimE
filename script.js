@@ -387,8 +387,7 @@ function shootEnemy(enemy) {
         showMessage(`${card.name}が失敗しました！`);
     }
     
-    gameState.selectedCard = null;
-    renderHand();
+    // 攻撃カードは装填したまま（選択解除しない）
     updateUI();
 }
 
