@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimE: Stellar Drift</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <div id="mainMenu" class="main-menu">
+            <h1 class="title">TimE: Stellar Drift</h1>
+            <p class="subtitle">時間の渦に飲み込まれた高校生のサバイバル</p>
+            <button class="menu-button" onclick="showDeckBuilder()">ゲーム開始</button>
+            <button class="menu-button" onclick="showInstructions()">操作説明</button>
+        </div>
+
+        <div id="deckBuilder" class="deck-builder">
+            <div class="deck-header">
+                <h2>デッキ構築 - 5枚のカードを選択してください</h2>
+                <p>選択中: <span id="selectedCount">0</span>/5</p>
+            </div>
+            <div class="deck-content">
+                <div class="available-cards">
+                    <h3>利用可能なカード</h3>
+                    <div id="availableCards" class="cards-grid"></div>
+                </div>
+                <div class="selected-deck">
+                    <h3>選択したデッキ</h3>
+                    <div id="selectedDeck" class="cards-grid"></div>
+                    <button class="menu-button" onclick="startGame()" id="startButton" style="margin-top: 20px; display: none;">戦闘開始</button>
+                </div>
+            </div>
+            <button class="menu-button" onclick="showMainMenu()" style="margin-top: 20px;">メインメニューに戻る</button>
+        </div>
+
+        <div id="gameScreen" class="game-screen">
+            <div class="game-area" id="gameArea">
+                <div class="ui-overlay">
+                    <div class="stat-bar">
+                        <div>HP: <span id="playerHp">100</span>/100</div>
+                        <div class="bar"><div class="bar-fill hp-fill" id="hpBar"></div></div>
+                    </div>
+                    <div class="stat-bar">
+                        <div>電力: <span id="playerEnergy">100</span>/100</div>
+                        <div class="bar"><div class="bar-fill energy-fill" id="energyBar"></div></div>
+                        <div id="supportEffects" class="support-effects"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hand-area">
+                <div id="handCards" style="display: flex; gap: 20px;"></div>
+            </div>
+
+            <div class="charge-area">
+                <div class="charge-button" id="chargeButton" onmousedown="startCharging()" onmouseup="stopCharging()" onmouseleave="stopCharging()">
+                    ⚡
+                </div>
+                <button class="pause-button" id="pauseButton" onclick="toggleTimePause()">
+                    ⏸️ 時間停止
+                </button>
+            </div>
+
+            <div class="message-area" id="messageArea"></div>
+        </div>
+
+        <div id="routeChoice" class="route-choice hidden">
+            <h3>進路を選択してください</h3>
+            <p id="routeDescription"></p>
+            <div id="routeButtons"></div>
+        </div>
+
+        <div id="cardSwap" class="card-swap-dialog hidden">
+            <h3>カード交換</h3>
+            <p>1枚のカードを交換できます</p>
+            
+            <div class="card-swap-section">
+                <h4>現在の手札</h4>
+                <div id="currentCards" class="swap-cards-grid"></div>
+            </div>
+            
+            <div class="card-swap-section">
+                <h4>利用可能なカード</h4>
+                <div id="availableSwapCards" class="swap-cards-grid"></div>
+            </div>
+            
+            <div class="swap-buttons">
+                <button class="choice-button" onclick="skipCardSwap()">交換しない</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
