@@ -233,6 +233,9 @@ function startGame() {
     gameState.player.hp = gameState.player.maxHp;
     gameState.player.energy = gameState.player.maxEnergy;
     
+    // 背景画像を設定
+    updateGameAreaBackground();
+    
     generateEnemies();
     renderHand();
     updateUI();
@@ -542,6 +545,12 @@ function killEnemy(enemy) {
 function nextWave() {
     gameState.wave++;
     
+    // ゲームクリア判定（Wave 10到達）
+    if (gameState.wave > 10) {
+        gameClear();
+        return;
+    }
+    
     // ウェーブクリア時に電力を10回復
     gameState.player.energy = Math.min(gameState.player.maxEnergy, gameState.player.energy + 10);
     showMessage(`ウェーブクリア！電力10回復`);
@@ -550,6 +559,8 @@ function nextWave() {
         // ルート選択
         showRouteChoice();
     } else {
+        // 背景画像を更新
+        updateGameAreaBackground();
         generateEnemies();
         showMessage(`ウェーブ ${gameState.wave} 開始！`);
     }
@@ -603,6 +614,8 @@ function selectRoute(choiceIndex) {
             break;
     }
     
+    // 背景画像を更新
+    updateGameAreaBackground();
     generateEnemies();
     updateUI();
 }
@@ -807,6 +820,54 @@ function gameOver() {
         resetGame();
         showMainMenu();
     }, 1000);
+}
+
+// ゲームクリア
+function gameClear() {
+    gameState.gameStarted = false;
+    
+    // 全てのインターバルをクリア
+    if (gameState.attackTimerInterval) {
+        clearInterval(gameState.attackTimerInterval);
+    }
+    
+    gameState.enemies.forEach(enemy => {
+        if (enemy.attackInterval) {
+            clearInterval(enemy.attackInterval);
+        }
+        if (enemy.freezeTimeout) {
+            clearTimeout(enemy.freezeTimeout);
+        }
+    });
+    
+    if (gameState.chargeInterval) {
+        clearInterval(gameState.chargeInterval);
+    }
+    
+    // クリアメッセージを表示
+    showMessage("全ウェーブクリア！時間の謎を解き明かした！");
+    
+    setTimeout(() => {
+        alert(`🎉 ゲームクリア！ 🎉
+
+おめでとうございます！
+
+【結果】
+• 到達ウェーブ: ${gameState.wave - 1}/10
+• 最終HP: ${gameState.player.hp}/${gameState.player.maxHp}
+• 最終電力: ${gameState.player.energy}/${gameState.player.maxEnergy}
+
+時間操作能力を駆使して全ての敵を撃退し、
+宇宙船の深部への道を切り拓きました！
+
+異形の宇宙生命体の謎は解き明かされ、
+時空の歪みから脱出することができました。
+
+素晴らしい戦略とプレイでした！`);
+        
+        resetGame();
+        showMainMenu();
+    }, 2000);
 }
 
 // ゲームリセット
@@ -1035,6 +1096,41 @@ function closeCardSwap() {
     selectedCardIndex = -1;
     document.getElementById('cardSwap').classList.add('hidden');
     renderHand(); // 手札を再描画
+}
+
+// ゲームエリア背景画像更新
+function updateGameAreaBackground() {
+    const gameArea = document.getElementById('gameArea');
+    if (!gameArea) return;
+    
+    let backgroundImage = '';
+    
+    // Waveに応じて背景画像を決定
+    if (gameState.wave >= 1 && gameState.wave <= 4) {
+        backgroundImage = 'wave1.png';
+    } else if (gameState.wave >= 5 && gameState.wave <= 7) {
+        backgroundImage = 'wave2.png';
+    } else if (gameState.wave >= 8 && gameState.wave <= 10) {
+        backgroundImage = 'wave3.png';
+    }
+    
+    // 背景画像を適用
+    if (backgroundImage) {
+        gameArea.style.backgroundImage = `url('${backgroundImage}'), 
+            radial-gradient(2px 2px at 20px 30px, #eee, transparent),
+            radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), transparent),
+            radial-gradient(1px 1px at 90px 40px, #fff, transparent),
+            radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.9), transparent),
+            radial-gradient(2px 2px at 160px 30px, #eee, transparent),
+            linear-gradient(45deg, rgba(74, 158, 255, 0.1) 0%, transparent 30%),
+            linear-gradient(-45deg, rgba(78, 205, 196, 0.08) 0%, transparent 25%),
+            radial-gradient(circle at 30% 20%, rgba(74, 158, 255, 0.15) 0%, transparent 50%),
+            radial-gradient(circle at 70% 80%, rgba(255, 107, 107, 0.12) 0%, transparent 50%),
+            linear-gradient(180deg, rgba(5, 5, 25, 0.95) 0%, rgba(15, 15, 35, 0.98) 100%)`;
+        gameArea.style.backgroundSize = 'cover, auto, auto, auto, auto, auto, auto, auto, auto, auto, auto';
+        gameArea.style.backgroundPosition = 'center, 20px 30px, 40px 70px, 90px 40px, 130px 80px, 160px 30px, 0 0, 0 0, 30% 20%, 70% 80%, 0 0';
+        gameArea.style.backgroundRepeat = 'no-repeat';
+    }
 }
 
 // プレイヤー攻撃エフェクト
