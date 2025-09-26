@@ -21,7 +21,9 @@ let gameState = {
     timePaused: false,
     attackTimerInterval: null,
     supportEffects: {},
-    showingCardSwap: false
+    showingCardSwap: false,
+    autoShootMode: true,
+    autoShootInterval: null
 };
 
 // カードデータ
@@ -145,20 +147,36 @@ function showInstructions() {
 時間操作能力を駆使して異形の宇宙生命体から生き延び、宇宙船の深部を目指す
 
 【操作方法】
-• マウスクリック: すべての操作
+• マウスクリック/タップ: すべての操作
 • カード選択: 手札のカードをクリック
 • 射撃: 敵をクリック
 • 電力チャージ: 右下の⚡ボタンを長押し
+• 時間停止/再開: SPACEキー または 時間停止ボタンをタップ
+• オート射撃切り替え: Aキー または オート射撃表示をタップ (時間停止中のみ)
 
 【カードの種類】
 • 攻撃カード: 敵にダメージ
 • 時間操作カード: 敵の動きを妨害
 • サポートカード: 回復や強化効果
 
+【時間停止機能】
+• 敵の攻撃タイマーと動きを完全停止
+• サポート効果のタイマーも一時停止
+• 時間停止中は攻撃・電力チャージ・一部サポートカードが使用不可
+• 戦略を練り直す時間を作ることができる
+
+【オート射撃モード】
+• 時間停止中にAキーまたはタップで切り替え可能
+• 時間再開時に自動で敵を攻撃
+• ボス優先、体力の少ない敵を狙う戦略
+• 攻撃カードが装填されている必要がある
+
 【戦略のコツ】
 • 電力を管理して持続的に戦闘する
 • 時間操作で敵の攻撃を回避
-• 状況に応じてカードを使い分ける`);
+• 状況に応じてカードを使い分ける
+• 危険な状況では時間停止を活用する
+• オート射撃で効率的に戦闘する`);
 }
 
 // カード表示
@@ -241,6 +259,14 @@ function startGame() {
     updateUI();
     showMessage("ステージ1開始！ 異形の宇宙生命体が襲来している！");
     startEnergyRegeneration();
+    
+    // デフォルトでオート射撃モードONなので開始
+    if (gameState.autoShootMode) {
+        startAutoShoot();
+    }
+    
+    // オート射撃モード表示を初期化
+    updateAutoShootDisplay();
 }
 
 // 敵生成
@@ -673,6 +699,20 @@ function toggleTimePause() {
         button.textContent = gameState.timePaused ? '▶️ 時間再開' : '⏸️ 時間停止';
     }
     
+    // オート射撃モードの切り替え
+    if (gameState.timePaused) {
+        // 時間停止時はオート射撃停止
+        if (gameState.autoShootInterval) {
+            clearInterval(gameState.autoShootInterval);
+            gameState.autoShootInterval = null;
+        }
+    } else {
+        // 時間再開時はオート射撃再開
+        if (gameState.autoShootMode) {
+            startAutoShoot();
+        }
+    }
+    
     // 時間停止/再開に応じてサポート効果のタイマーを調整
     if (gameState.timePaused) {
         // 時間停止時：現在の残り時間を保存
@@ -693,7 +733,13 @@ function toggleTimePause() {
         });
     }
     
-    showMessage(gameState.timePaused ? '時間を停止しました' : '時間を再開しました');
+    const modeText = gameState.autoShootMode ? ' (オート射撃ON)' : '';
+    showMessage(gameState.timePaused ? 
+        `時間を停止しました${modeText}` : 
+        `時間を再開しました${modeText}`);
+    
+    // UI表示を更新
+    updateAutoShootDisplay();
 }
 
 // プレイヤーへの攻撃
@@ -776,6 +822,43 @@ function updateUI() {
     const energyBar = document.getElementById('energyBar');
     const energyPercent = (gameState.player.energy / gameState.player.maxEnergy) * 100;
     energyBar.style.width = energyPercent + '%';
+    
+    // Wave情報更新
+    const waveElement = document.getElementById('currentWave');
+    if (waveElement) {
+        waveElement.textContent = gameState.wave;
+    }
+    
+    // オート射撃モード表示更新
+    updateAutoShootDisplay();
+}
+
+// オート射撃モード表示更新
+function updateAutoShootDisplay() {
+    const autoShootDisplay = document.getElementById('autoShootDisplay');
+    if (autoShootDisplay) {
+        const modeText = gameState.autoShootMode ? 'オート射撃 ON' : 'マニュアル射撃';
+        const modeColor = gameState.autoShootMode ? '#4af2ff' : '#ffaa44';
+        
+        if (gameState.timePaused) {
+            // 時間停止中はクリック可能なボタンとして表示
+            autoShootDisplay.innerHTML = `
+                <div style="cursor: pointer; padding: 8px 12px; border: 2px solid ${modeColor}; border-radius: 8px; background: rgba(0,0,0,0.7); margin-top: 10px;" onclick="toggleAutoShoot()">
+                    <span style="color: ${modeColor}; font-weight: bold; font-size: 14px;">${modeText}</span>
+                    <br><span style="color: #ccc; font-size: 12px;">タップで切替</span>
+                </div>
+            `;
+        } else {
+            // 時間再開中は表示のみ
+            autoShootDisplay.innerHTML = `
+                <div style="padding: 8px 12px; background: rgba(0,0,0,0.5); border-radius: 8px; margin-top: 10px;">
+                    <span style="color: ${modeColor}; font-weight: bold; font-size: 14px;">${modeText}</span>
+                </div>
+            `;
+        }
+    } else {
+        console.log('autoShootDisplay element not found');
+    }
 }
 
 // メッセージ表示
@@ -889,6 +972,8 @@ function resetGame() {
     gameState.timePaused = false;
     gameState.supportEffects = {};
     gameState.showingCardSwap = false;
+    gameState.autoShootMode = true;
+    gameState.autoShootInterval = null;
     
     // UI要素をクリア
     const gameArea = document.getElementById('gameArea');
@@ -923,7 +1008,23 @@ document.addEventListener('keydown', (event) => {
         event.preventDefault(); // ページのスクロールを防ぐ
         toggleTimePause();
     }
+    
+    // オート射撃モード切り替え（時間停止中のみ）
+    if (event.code === 'KeyA' && gameState.gameStarted && gameState.timePaused) {
+        event.preventDefault();
+        toggleAutoShoot();
+    }
 });
+
+// タッチ用オート射撃切り替えボタン
+function toggleAutoShootTouch() {
+    if (!gameState.gameStarted) {
+        return;
+    }
+    
+    // 直接オート射撃切り替えを試行
+    toggleAutoShoot();
+}
 
 // サポート効果管理
 function addSupportEffect(id, name, duration) {
@@ -1252,4 +1353,92 @@ function showPlayerDamageEffect(damage) {
         if (flashEffect.parentNode) flashEffect.remove();
         if (damageText.parentNode) damageText.remove();
     }, 1500);
+}
+
+// オート射撃モード切り替え
+function toggleAutoShoot() {
+    if (!gameState.timePaused) {
+        showMessage("時間停止中のみオート射撃モードを切り替えできます");
+        return;
+    }
+    
+    gameState.autoShootMode = !gameState.autoShootMode;
+    
+    if (gameState.autoShootMode) {
+        showMessage("オート射撃モードON (時間再開時に自動射撃開始)");
+    } else {
+        showMessage("オート射撃モードOFF");
+        // オート射撃を停止
+        if (gameState.autoShootInterval) {
+            clearInterval(gameState.autoShootInterval);
+            gameState.autoShootInterval = null;
+        }
+    }
+    
+    // UI表示を更新
+    updateAutoShootDisplay();
+}
+
+// オート射撃開始
+function startAutoShoot() {
+    if (gameState.autoShootInterval) {
+        clearInterval(gameState.autoShootInterval);
+    }
+    
+    gameState.autoShootInterval = setInterval(() => {
+        if (!gameState.timePaused && gameState.gameStarted && gameState.autoShootMode) {
+            performAutoAttack();
+        }
+    }, 800); // 0.8秒間隔で自動攻撃
+}
+
+// 自動攻撃実行
+function performAutoAttack() {
+    // 攻撃可能なカードがない場合は何もしない
+    if (!gameState.selectedCard || 
+        (gameState.selectedCard.action !== 'attack' && 
+         gameState.selectedCard.action !== 'multiattack' && 
+         gameState.selectedCard.action !== 'freeze')) {
+        return;
+    }
+    
+    // 電力不足の場合は何もしない
+    if (!gameState.overloadActive && gameState.player.energy < gameState.selectedCard.cost) {
+        return;
+    }
+    
+    // 生きている敵の中からランダムに選択
+    const aliveEnemies = gameState.enemies.filter(enemy => enemy.hp > 0);
+    if (aliveEnemies.length === 0) {
+        return;
+    }
+    
+    // ボス優先、その次に体力の少ない敵を狙う
+    let targetEnemy = aliveEnemies.find(enemy => enemy.isBoss);
+    if (!targetEnemy) {
+        targetEnemy = aliveEnemies.reduce((prev, current) => 
+            prev.hp < current.hp ? prev : current
+        );
+    }
+    
+    if (targetEnemy) {
+        const card = gameState.selectedCard;
+        
+        // 電力消費
+        if (!gameState.overloadActive) {
+            gameState.player.energy = Math.max(0, gameState.player.energy - card.cost);
+        }
+        
+        // 成功判定
+        const success = Math.random() * 100 < card.successRate;
+        
+        if (success) {
+            executeCardEffect(card, targetEnemy);
+            showPlayerAttackEffect(targetEnemy);
+        } else {
+            showMessage(`${card.name}が失敗しました！`);
+        }
+        
+        updateUI();
+    }
 }
