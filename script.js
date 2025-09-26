@@ -1107,11 +1107,11 @@ function updateGameAreaBackground() {
     
     // Waveに応じて背景画像を決定
     if (gameState.wave >= 1 && gameState.wave <= 4) {
-        backgroundImage = 'wave1.png';
+        backgroundImage = './wave1.png';
     } else if (gameState.wave >= 5 && gameState.wave <= 7) {
-        backgroundImage = 'wave2.png';
+        backgroundImage = './wave2.png';
     } else if (gameState.wave >= 8 && gameState.wave <= 10) {
-        backgroundImage = 'wave3.png';
+        backgroundImage = './wave3.png';
     }
     
     // 背景画像を適用

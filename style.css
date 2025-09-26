@@ -28,7 +28,7 @@ body {
     align-items: center;
     height: 100vh;
     background: 
-        url('main.png') center/cover no-repeat,
+        url('./main.png') center/cover no-repeat,
         radial-gradient(circle at center, rgba(20, 30, 60, 0.9), rgba(10, 10, 46, 1));
 }
 
@@ -70,7 +70,7 @@ body {
     padding: 20px;
     height: 100vh;
     background: 
-        url('deckSelect.png') center/cover no-repeat,
+        url('./deckSelect.png') center/cover no-repeat,
         linear-gradient(135deg, #1a1a3e 0%, #2d2d5a 100%);
 }
 
