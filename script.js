@@ -1,3 +1,33 @@
+// BGMオーディオ
+const titleBGM = new Audio('TimE%E3%82%BF%E3%82%A4%E3%83%88%E3%83%AB%E7%94%BB%E9%9D%A2.mp3');
+const battleBGM = new Audio('SF%E3%83%90%E3%83%88%E3%83%AB%E7%94%BB%E9%9D%A2.mp3');
+titleBGM.loop = true;
+battleBGM.loop = true;
+titleBGM.volume = 0.5;
+battleBGM.volume = 0.5;
+
+let currentBGM = null;
+
+// BGM再生関数
+function playBGM(bgm) {
+    if (currentBGM === bgm && !currentBGM.paused) {
+        return; // 既に再生中の場合は何もしない
+    }
+    
+    // 現在のBGMを停止
+    if (currentBGM) {
+        currentBGM.pause();
+        currentBGM.currentTime = 0;
+    }
+    
+    // 新しいBGMを再生
+    currentBGM = bgm;
+    currentBGM.play().catch(err => {
+        console.log('BGM再生エラー:', err);
+        console.log('ユーザー操作後に自動的に再生を試みます');
+    });
+}
+
 // ゲーム状態
 let gameState = {
     player: {
@@ -127,6 +157,7 @@ function showMainMenu() {
     document.getElementById('mainMenu').style.display = 'flex';
     document.getElementById('deckBuilder').style.display = 'none';
     document.getElementById('gameScreen').style.display = 'none';
+    playBGM(titleBGM);
 }
 
 // デッキ構築画面表示
@@ -135,6 +166,7 @@ function showDeckBuilder() {
     document.getElementById('mainMenu').style.display = 'none';
     document.getElementById('deckBuilder').style.display = 'block';
     document.getElementById('gameScreen').style.display = 'none';
+    playBGM(titleBGM);
     renderAvailableCards();
     updateDeckBuilder();
 }
@@ -251,6 +283,9 @@ function startGame() {
     
     // 背景画像を設定
     updateGameAreaBackground();
+    
+    // バトルBGMに切り替え
+    playBGM(battleBGM);
     
     generateEnemies();
     renderHand();
